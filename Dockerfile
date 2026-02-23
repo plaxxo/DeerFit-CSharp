@@ -1,4 +1,5 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+﻿# ── Build Stage ──
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY DeerFit.Core/DeerFit.Core.csproj DeerFit.Core/
@@ -12,7 +13,7 @@ RUN dotnet publish DeerFit.Web/DeerFit.Web.csproj \
     --no-restore
 
 # ── Runtime Stage ──
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
