@@ -1,5 +1,6 @@
 ﻿using DeerFit.Core.Models;
 using DeerFit.Core.Repositories;
+using DeerFit.Core.Settings;
 
 namespace DeerFit.Core.Services;
 
@@ -17,29 +18,31 @@ public class MemberService
     {
         var existing = await _repo.GetByEmailAsync(member.Email);
         if (existing is not null)
-            return (false, "Ein Member mit dieser E-Mail existiert bereits.");
+            return (false, "Member with this email already exists");
 
         await _repo.CreateAsync(member);
-        return (true, "Member erfolgreich erstellt.");
+        return (true, string.Format(Messages.Member_Created));
     }
 
     public async Task<(bool Success, string Message)> UpdateAsync(string id, Member member)
     {
         var existing = await _repo.GetByIdAsync(id);
         if (existing is null)
-            return (false, "Member nicht gefunden.");
+            return (false, GetMemberNotFoundMessage(id));
 
         await _repo.UpdateAsync(id, member);
-        return (true, "Member erfolgreich aktualisiert.");
+        return (true, string.Format(Messages.Member_Updated, member.FullName));
     }
 
     public async Task<(bool Success, string Message)> DeleteAsync(string id)
     {
         var existing = await _repo.GetByIdAsync(id);
         if (existing is null)
-            return (false, "Member nicht gefunden.");
+            return (false, GetMemberNotFoundMessage(id));
 
         await _repo.DeleteAsync(id);
-        return (true, "Member erfolgreich gelöscht.");
+        return (true, string.Format(Messages.Member_Deleted, existing.FullName));
     }
+    
+    private static string GetMemberNotFoundMessage(string id) => string.Format(Messages.Member_NotFound, id);
 }

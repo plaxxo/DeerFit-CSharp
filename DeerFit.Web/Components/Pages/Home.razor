@@ -1,7 +1,100 @@
-﻿@page "/"
+@rendermode InteractiveServer
+@page "/"
+@using DeerFit.Core.Models
+@using DeerFit.Core.Services
+@inject NavigationManager Nav
+@inject MemberService MemberService
+@inject CourseService CourseService
+@inject BookingService BookingService
 
-<PageTitle>Home</PageTitle>
+<!-- Hero Section with Dashboard -->
+<section class="hero-section-home">
+    <div class="hero-overlay"></div>
+    <div class="hero-content-home">
+        <h1 class="hero-title">TRANSFORM YOUR BODY</h1>
+        <p class="hero-subtitle">Train with the best. Achieve your goals.</p>
 
-<h1>Hello, world!</h1>
+        <!-- Dashboard Stats -->
+        <div class="dashboard-inline">
+            @if (_loading)
+            {
+                <div class="loading">⏳ Loading stats...</div>
+            }
+            else
+            {
+                <div class="stats-row-inline">
+                    <div class="stat-box-inline">
+                        <div class="stat-number-inline">@_totalMembers</div>
+                        <div class="stat-label-inline">Total Members</div>
+                    </div>
+                    <div class="stat-box-inline">
+                        <div class="stat-number-inline">@_activeMembers</div>
+                        <div class="stat-label-inline">Active Members</div>
+                    </div>
+                    <div class="stat-box-inline">
+                        <div class="stat-number-inline">@_upcomingCourses</div>
+                        <div class="stat-label-inline">Upcoming Classes</div>
+                    </div>
+                    <div class="stat-box-inline">
+                        <div class="stat-number-inline">@_totalBookings</div>
+                        <div class="stat-label-inline">Total Bookings</div>
+                    </div>
+                </div>
+            }
+        </div>
 
-Welcome to your new app.
+        <!-- Quick Actions -->
+        <div class="quick-actions-inline">
+            <div class="quick-action-btn" @onclick='() => Nav.NavigateTo("/bookings/create")'>
+                <span class="quick-action-icon">📋</span>
+                <span class="quick-action-label">New Booking</span>
+            </div>
+            <div class="quick-action-btn" @onclick='() => Nav.NavigateTo("/members/create")'>
+                <span class="quick-action-icon">👤</span>
+                <span class="quick-action-label">New Member</span>
+            </div>
+            <div class="quick-action-btn" @onclick='() => Nav.NavigateTo("/courses/create")'>
+                <span class="quick-action-icon">📅</span>
+                <span class="quick-action-label">New Course</span>
+            </div>
+        </div>
+    </div>
+    <HeroDots />
+</section>
+
+@code {
+    private bool _loading = true;
+    private int _totalMembers;
+    private int _activeMembers;
+    private int _upcomingCourses;
+    private int _totalBookings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var membersTask = MemberService.GetAllAsync();
+            var coursesTask = CourseService.GetAllAsync();
+            var bookingsTask = BookingService.GetAllAsync();
+
+            await Task.WhenAll(membersTask, coursesTask, bookingsTask);
+
+            var members = membersTask.Result;
+            var courses = coursesTask.Result;
+            var bookings = bookingsTask.Result;
+
+            _totalMembers = members.Count;
+            _activeMembers = members.Count(m => m.IsActive);
+            _upcomingCourses = courses.Count(c => c.StartTime > DateTime.UtcNow);
+            _totalBookings = bookings.Count;
+        }
+        catch
+        {
+            // Silently handle errors
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

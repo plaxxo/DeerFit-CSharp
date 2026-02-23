@@ -1,29 +1,15 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">DeerFit.Web</a>
+﻿@rendermode InteractiveServer
+
+<nav class="gym-navbar">
+    <div class="navbar-container">
+        <div class="navbar-logo">
+            <img src="/resources/img/deer-fit-logo.png" alt="DeerFit Logo" class="logo-image" />
+        </div>
+        <div class="navbar-menu">
+            <NavLink href="" Match="NavLinkMatch.All">Home</NavLink>
+            <NavLink href="courses">Course</NavLink>
+            <NavLink href="bookings">Bookings</NavLink>
+            <NavLink href="members">Member</NavLink>
+        </div>
     </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+</nav>

@@ -1,0 +1,29 @@
+﻿name: CI – Build Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Code auschecken
+        uses: actions/checkout@v4
+
+      - name: ⚙️ .NET 8 installieren
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 📦 Dependencies laden
+        run: dotnet restore DeerFit.Web/DeerFit.Web.csproj
+
+      - name: 🔨 Projekt bauen
+        run: dotnet build DeerFit.Web/DeerFit.Web.csproj -c Release --no-restore
+
+      - name: 📤 Publish testen
+        run: dotnet publish DeerFit.Web/DeerFit.Web.csproj -c Release -o ./publish --no-restore

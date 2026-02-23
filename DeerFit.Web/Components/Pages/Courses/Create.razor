@@ -1,0 +1,93 @@
+﻿@page "/courses/create"
+@rendermode InteractiveServer
+@using DeerFit.Core.Models
+@using DeerFit.Core.Services
+@inject CourseService CourseService
+@inject NavigationManager Nav
+
+<div class="page-header">
+    <h1>➕ Neuer Kurs</h1>
+    <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo("/courses")'>
+        ← Zurück
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-error">@_errorMessage</div>
+}
+
+<div class="card">
+    <EditForm Model="_course" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Kursname *</label>
+                <InputText @bind-Value="_course.Name" placeholder="z.B. Yoga Basics" />
+                <ValidationMessage For="() => _course.Name" />
+            </div>
+            <div class="form-group">
+                <label>Trainer *</label>
+                <InputText @bind-Value="_course.Trainer" placeholder="z.B. Anna Müller" />
+                <ValidationMessage For="() => _course.Trainer" />
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Beschreibung</label>
+                <InputText @bind-Value="_course.Description"
+                           placeholder="Kurze Beschreibung des Kurses" />
+            </div>
+            <div class="form-group">
+                <label>Startzeit *</label>
+                <input type="datetime-local"
+                       value="@_startTimeLocal"
+                       @onchange="OnStartTimeChanged" />
+            </div>
+            <div class="form-group">
+                <label>Dauer (Minuten) *</label>
+                <InputNumber @bind-Value="_course.DurationMin" placeholder="60" />
+                <ValidationMessage For="() => _course.DurationMin" />
+            </div>
+            <div class="form-group">
+                <label>Max. Teilnehmer *</label>
+                <InputNumber @bind-Value="_course.MaxCapacity" placeholder="15" />
+                <ValidationMessage For="() => _course.MaxCapacity" />
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-primary" type="submit" disabled="@_saving">
+                @(_saving ? "⏳ Speichern..." : "💾 Speichern")
+            </button>
+            <button class="btn btn-secondary" type="button"
+                    @onclick='() => Nav.NavigateTo("/courses")'>
+                Abbrechen
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private Course _course       = new() { StartTime = DateTime.Now };
+    private string _startTimeLocal = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+    private bool   _saving;
+    private string _errorMessage = string.Empty;
+
+    private void OnStartTimeChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var dt))
+        {
+            _course.StartTime = dt.ToUniversalTime();
+            _startTimeLocal   = dt.ToString("yyyy-MM-ddTHH:mm");
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        _saving       = true;
+        _errorMessage = string.Empty;
+
+        await CourseService.CreateAsync(_course);
+        Nav.NavigateTo("/courses");
+    }
+}

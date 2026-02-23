@@ -5,7 +5,7 @@ public class MongoDbSettings
     public string ConnectionString { get; set; } = null!;
     public string DatabaseName     { get; set; } = null!;
     
-    public string MembersCollection  { get; set; } = "Members";
-    public string CoursesCollection  { get; set; } = "Courses";
-    public string BookingsCollection { get; set; } = "Bookings";
+    public string MembersCollection  { get; set; } = "members";
+    public string CoursesCollection  { get; set; } = "courses";
+    public string BookingsCollection { get; set; } = "bookings";
 }

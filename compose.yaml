@@ -1,0 +1,7 @@
+﻿services:
+  deerfit.web:
+    image: deerfit.web
+    build:
+      context: .
+      dockerfile: DeerFit.Web/Dockerfile
+

@@ -1,0 +1,185 @@
+﻿@page "/bookings"
+@rendermode InteractiveServer
+@using DeerFit.Core.Models
+@using DeerFit.Core.Services
+@inject BookingService BookingService
+@inject MemberService MemberService
+@inject CourseService CourseService
+@inject NavigationManager Nav
+
+<HeroDots />
+
+<div class="page-header">
+    <h1>📋 Buchungen</h1>
+    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/bookings/create")'>
+        + Neue Buchung
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading">⏳ Lade Buchungen...</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_feedback))
+    {
+        <div class="alert alert-success">@_feedback</div>
+    }
+
+    <div class="card">
+        <!-- Filter -->
+        <div class="search-bar" style="flex-wrap: wrap; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+                <select @bind="_filterStatus" @bind:after="ApplyFilter"
+                        style="padding:8px 14px; border-radius:8px; border:1.5px solid #ddd;">
+                    <option value="">Alle Status</option>
+                    @foreach (var s in Enum.GetValues<BookingStatus>())
+                    {
+                        <option value="@s">@s</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Kurs</th>
+                        <th>Kurszeit</th>
+                        <th>Gebucht am</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in _filtered)
+                    {
+                        var member = GetMember(b.MemberId);
+                        var course = GetCourse(b.CourseId);
+                        <tr>
+                            <td>
+                                <strong>@(member?.FullName ?? "–")</strong><br />
+                                <small style="color:#888;">@(member?.Email ?? "")</small>
+                            </td>
+                            <td>
+                                <strong>@(course?.Name ?? "–")</strong><br />
+                                <small style="color:#888;">@(course?.Trainer ?? "")</small>
+                            </td>
+                            <td>@(course?.StartTime.ToString("dd.MM.yyyy HH:mm") ?? "–")</td>
+                            <td>@b.BookedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <span class="badge badge-@b.Status.ToString().ToLower()">
+                                    @b.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (b.Status == BookingStatus.Confirmed)
+                                {
+                                    <button class="btn btn-success btn-sm"
+                                            @onclick="() => MarkAttended(b)">
+                                        ✅ Anwesend
+                                    </button>
+                                    <button class="btn btn-danger btn-sm"
+                                            @onclick="() => ConfirmCancel(b)">
+                                        ✕ Stornieren
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span style="color:#aaa; font-size:0.85rem;">Keine Aktion</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (!_filtered.Any())
+            {
+                <div class="loading">Keine Buchungen gefunden.</div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Stornieren Dialog -->
+@if (_bookingToCancel is not null)
+{
+    var m = GetMember(_bookingToCancel.MemberId);
+    var c = GetCourse(_bookingToCancel.CourseId);
+    <div class="modal-backdrop" @onclick="CancelModal">
+        <div class="card modal-card" @onclick:stopPropagation="true">
+            <h3>Buchung stornieren?</h3>
+            <p>
+                Buchung von <strong>@(m?.FullName ?? "–")</strong>
+                für <strong>@(c?.Name ?? "–")</strong> stornieren?
+            </p>
+            <div class="form-actions">
+                <button class="btn btn-danger" @onclick="DoCancel">✕ Ja, stornieren</button>
+                <button class="btn btn-secondary" @onclick="CancelModal">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Booking> _bookings = new();
+    private List<Booking> _filtered = new();
+    private List<Member>  _members  = new();
+    private List<Course>  _courses  = new();
+    private bool          _loading  = true;
+    private string        _feedback = string.Empty;
+    private string        _filterStatus = string.Empty;
+    private Booking?      _bookingToCancel;
+
+    protected override async Task OnInitializedAsync() => await LoadAllAsync();
+
+    private async Task LoadAllAsync()
+    {
+        _loading  = true;
+        // Alle drei parallel laden
+        var t1 = BookingService.GetAllAsync();
+        var t2 = MemberService.GetAllAsync();
+        var t3 = CourseService.GetAllAsync();
+        await Task.WhenAll(t1, t2, t3);
+
+        _bookings = t1.Result;
+        _members  = t2.Result;
+        _courses  = t3.Result;
+
+        ApplyFilter();
+        _loading = false;
+    }
+
+    private void ApplyFilter()
+    {
+        _filtered = string.IsNullOrEmpty(_filterStatus)
+            ? _bookings
+            : _bookings.Where(b => b.Status.ToString() == _filterStatus).ToList();
+    }
+
+    private Member?  GetMember(string id) => _members.FirstOrDefault(m => m.Id == id);
+    private Course?  GetCourse(string id) => _courses.FirstOrDefault(c => c.Id == id);
+
+    private void ConfirmCancel(Booking b) => _bookingToCancel = b;
+    private void CancelModal()            => _bookingToCancel = null;
+
+    private async Task DoCancel()
+    {
+        if (_bookingToCancel is null) return;
+        var (_, message) = await BookingService.CancelAsync(_bookingToCancel.Id!);
+        _feedback        = message;
+        _bookingToCancel = null;
+        await LoadAllAsync();
+    }
+
+    private async Task MarkAttended(Booking b)
+    {
+        await BookingService.MarkAttendedAsync(b.Id!);
+        _feedback = "Anwesenheit gespeichert.";
+        await LoadAllAsync();
+    }
+}

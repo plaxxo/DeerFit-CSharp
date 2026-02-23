@@ -1,0 +1,95 @@
+﻿@page "/members/create"
+@rendermode InteractiveServer
+
+@inject MemberService MemberService
+@inject NavigationManager Nav
+
+<HeroDots />
+
+<div class="page-header">
+    <h1>➕ Neues Member</h1>
+    <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo("/members")'>
+        ← Zurück
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-error" style="margin: 0 80px 16px;">@_errorMessage</div>
+}
+
+<div class="card">
+    <EditForm Model="_member" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Vorname *</label>
+                <InputText @bind-Value="_member.FirstName" placeholder="Max" />
+                <ValidationMessage For="() => _member.FirstName" />
+            </div>
+            <div class="form-group">
+                <label>Nachname *</label>
+                <InputText @bind-Value="_member.LastName" placeholder="Mustermann" />
+                <ValidationMessage For="() => _member.LastName" />
+            </div>
+            <div class="form-group">
+                <label>E-Mail *</label>
+                <InputText @bind-Value="_member.Email" placeholder="max@beispiel.de" />
+                <ValidationMessage For="() => _member.Email" />
+            </div>
+            <div class="form-group">
+                <label>Telefon</label>
+                <InputText @bind-Value="_member.Phone" placeholder="+49 123 456789" />
+            </div>
+            <div class="form-group">
+                <label>Mitgliedschaft</label>
+                <InputSelect @bind-Value="_member.Membership">
+                    @foreach (var type in Enum.GetValues<MembershipType>())
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <InputSelect @bind-Value="_member.IsActive">
+                    <option value="true">Aktiv</option>
+                    <option value="false">Inaktiv</option>
+                </InputSelect>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-primary" type="submit" disabled="@_saving">
+                @(_saving ? "⏳ Speichern..." : "💾 Speichern")
+            </button>
+            <button class="btn btn-secondary" type="button"
+                    @onclick='() => Nav.NavigateTo("/members")'>
+                Abbrechen
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private Member _member = new();
+    private bool   _saving;
+    private string _errorMessage = string.Empty;
+
+    private async Task HandleSubmit()
+    {
+        _saving = true;
+        _errorMessage = string.Empty;
+
+        var (success, message) = await MemberService.CreateAsync(_member);
+
+        if (success)
+            Nav.NavigateTo("/members");
+        else
+        {
+            _errorMessage = message;
+            _saving = false;
+        }
+    }
+}

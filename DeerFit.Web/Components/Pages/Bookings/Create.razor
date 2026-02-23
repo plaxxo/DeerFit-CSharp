@@ -1,0 +1,139 @@
+﻿@page "/bookings/create"
+@rendermode InteractiveServer
+@using DeerFit.Core.Models
+@using DeerFit.Core.Services
+@inject BookingService BookingService
+@inject MemberService MemberService
+@inject CourseService CourseService
+@inject NavigationManager Nav
+
+<div class="page-header">
+    <h1>➕ Neue Buchung</h1>
+    <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo("/bookings")'>
+        ← Zurück
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading">⏳ Lade Daten...</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-error">@_errorMessage</div>
+    }
+
+    <div class="card">
+        <div class="form-grid">
+            <!-- Member Auswahl -->
+            <div class="form-group">
+                <label>Member *</label>
+                <select @bind="_selectedMemberId"
+                        style="padding:10px 14px; border-radius:8px; border:1.5px solid #ddd;">
+                    <option value="">– Member wählen –</option>
+                    @foreach (var m in _members)
+                    {
+                        <option value="@m.Id">@m.FullName (@m.Email)</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Kurs Auswahl -->
+            <div class="form-group">
+                <label>Kurs *</label>
+                <select @bind="_selectedCourseId" @bind:after="OnCourseSelected"
+                        style="padding:10px 14px; border-radius:8px; border:1.5px solid #ddd;">
+                    <option value="">– Kurs wählen –</option>
+                    @foreach (var c in _courses)
+                    {
+                        <option value="@c.Id" disabled="@c.IsFull">
+                            @c.Name – @c.StartTime.ToString("dd.MM.yy HH:mm")
+                            (@c.FreeSpots freie Plätze)
+                            @(c.IsFull ? " [Ausgebucht]" : "")
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <!-- Kurs Vorschau -->
+        @if (_selectedCourse is not null)
+        {
+            <div class="course-preview">
+                <div class="preview-row">
+                    <span>🏋️ Trainer </span><strong>@_selectedCourse.Trainer</strong>
+                </div>
+                <div class="preview-row">
+                    <span>🕒 Zeit</span>
+                    <strong>
+                        @_selectedCourse.StartTime.ToString("dd.MM.yyyy HH:mm")
+                        – @_selectedCourse.EndTime.ToString("HH:mm")
+                    </strong>
+                </div>
+                <div class="preview-row">
+                    <span>👥 Plätze</span>
+                    <strong>@_selectedCourse.FreeSpots von @_selectedCourse.MaxCapacity frei</strong>
+                </div>
+            </div>
+        }
+
+        <div class="form-actions">
+            <button class="btn btn-primary" @onclick="HandleSubmit" disabled="@_saving">
+                @(_saving ? "⏳ Buchen..." : "📋 Buchung erstellen")
+            </button>
+            <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo("/bookings")'>
+                Abbrechen
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Member> _members       = new();
+    private List<Course> _courses       = new();
+    private Course?      _selectedCourse;
+    private string       _selectedMemberId = string.Empty;
+    private string       _selectedCourseId = string.Empty;
+    private bool         _loading          = true;
+    private bool         _saving;
+    private string       _errorMessage     = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var t1 = MemberService.GetActiveAsync();
+        var t2 = CourseService.GetUpcomingAsync();
+        await Task.WhenAll(t1, t2);
+        _members = t1.Result;
+        _courses = t2.Result;
+        _loading = false;
+    }
+
+    private void OnCourseSelected()
+    {
+        _selectedCourse = _courses.FirstOrDefault(c => c.Id == _selectedCourseId);
+    }
+
+    private async Task HandleSubmit()
+    {
+        _errorMessage = string.Empty;
+
+        if (string.IsNullOrEmpty(_selectedMemberId) || string.IsNullOrEmpty(_selectedCourseId))
+        {
+            _errorMessage = "Bitte Member und Kurs auswählen.";
+            return;
+        }
+
+        _saving = true;
+        var (success, message) = await BookingService.BookAsync(_selectedMemberId, _selectedCourseId);
+
+        if (success)
+            Nav.NavigateTo("/bookings");
+        else
+        {
+            _errorMessage = message;
+            _saving       = false;
+        }
+    }
+}

@@ -1,0 +1,160 @@
+﻿@page "/members"
+@using DeerFit.Core.Models
+@using DeerFit.Core.Services
+@rendermode InteractiveServer
+@inject MemberService MemberService
+@inject NavigationManager Nav
+
+<HeroDots />
+
+<div class="page-header">
+    <h1>👥 Members</h1>
+    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo($"/members/create")'>
+        + Neuer Member
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading">⏳ Lade Members...</div>
+}
+else
+{
+    <div class="card">
+        <div class="search-bar">
+            <input placeholder="🔍 Name oder E-Mail suchen..."
+                   @bind="_searchTerm"
+                   @bind:event="oninput"
+                   @onkeyup="OnSearch" />
+            @if (!string.IsNullOrEmpty(_searchTerm))
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="ClearSearch">✕ Zurücksetzen</button>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_feedback))
+        {
+            <div class="alert alert-success">@_feedback</div>
+        }
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>E-Mail</th>
+                        <th>Telefon</th>
+                        <th>Mitgliedschaft</th>
+                        <th>Seit</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in _members)
+                    {
+                        <tr>
+                            <td><strong>@m.FullName</strong></td>
+                            <td>@m.Email</td>
+                            <td>@m.Phone</td>
+                            <td>
+                                <span class="badge badge-@m.Membership.ToString().ToLower()">
+                                    @m.Membership
+                                </span>
+                            </td>
+                            <td>@m.MemberSince.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                <span class="badge @(m.IsActive ? "badge-active" : "badge-inactive")">
+                                    @(m.IsActive ? "Aktiv" : "Inaktiv")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm"
+                                        @onclick='() => Nav.NavigateTo($"/members/edit/{m.Id}")'>
+                                    ✏️ Bearbeiten
+                                </button>
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => ConfirmDelete(m)">
+                                    🗑️ Löschen
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (!_members.Any())
+            {
+                <div class="loading">Keine Members gefunden.</div>
+            }
+        </div>
+    </div>
+}
+
+@* ── Lösch-Bestätigungsdialog ── *@
+@if (_memberToDelete is not null)
+{
+    <div class="modal-backdrop" @onclick="CancelDelete">
+        <div class="card modal-card" @onclick:stopPropagation="true">
+            <h3>Member löschen?</h3>
+            <p>Soll <strong>@_memberToDelete.FullName</strong> wirklich gelöscht werden?</p>
+            <div class="form-actions">
+                <button class="btn btn-danger" @onclick="DeleteMember">🗑️ Ja, löschen</button>
+                <button class="btn btn-secondary" @onclick="CancelDelete">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Member> _members = new();
+    private bool         _loading = true;
+    private string       _searchTerm = string.Empty;
+    private string       _feedback   = string.Empty;
+    private Member?      _memberToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMembersAsync();
+    }
+
+    private async Task LoadMembersAsync()
+    {
+        _loading = true;
+        _members = await MemberService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task OnSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _members = await MemberService.GetAllAsync();
+        }
+        else
+        {
+            _members = await MemberService.SearchAsync(_searchTerm);
+        }
+    }
+
+    private async Task ClearSearch()
+    {
+        _searchTerm = string.Empty;
+        _members    = await MemberService.GetAllAsync();
+    }
+
+    private void ConfirmDelete(Member m) => _memberToDelete = m;
+    private void CancelDelete()          => _memberToDelete = null;
+
+    private async Task DeleteMember()
+    {
+        if (_memberToDelete is null) return;
+        var (success, message) = await MemberService.DeleteAsync(_memberToDelete.Id!);
+        if (success)
+        {
+            _feedback = message;
+            await LoadMembersAsync();
+        }
+        _memberToDelete = null;
+    }
+}

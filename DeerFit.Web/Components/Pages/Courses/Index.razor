@@ -1,0 +1,156 @@
+﻿@page "/courses"
+@rendermode InteractiveServer
+@using DeerFit.Core.Models
+@using DeerFit.Core.Services
+@inject CourseService CourseService
+@inject NavigationManager Nav
+
+<HeroDots />
+
+<div class="page-header">
+    <h1>📅 Kurse</h1>
+    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/courses/create")'>
+                                                                                     + Neuer Kurs
+                                                                                             </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading">⏳ Lade Kurse...</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_feedback))
+    {
+        <div class="alert alert-success">@_feedback</div>
+    }
+
+    <div class="card">
+        <div class="search-bar">
+            <label style="font-weight:600; color:#dddddd;">Ansicht:</label>
+            <button class="btn btn-sm @(_showAll ? "btn-primary" : "btn-secondary")"
+                    @onclick="ShowAll">Alle</button>
+            <button class="btn btn-sm @(!_showAll ? "btn-primary" : "btn-secondary")"
+                    @onclick="ShowUpcoming">Nur kommende</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kurs</th>
+                        <th>Trainer</th>
+                        <th>Start</th>
+                        <th>Dauer</th>
+                        <th>Auslastung</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _courses)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@c.Name</strong>
+                                @if (!string.IsNullOrEmpty(c.Description))
+                                {
+                                    <br /><small style="color:#888;">@c.Description</small>
+                                }
+                            </td>
+                            <td>@c.Trainer</td>
+                            <td>@c.StartTime.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@c.DurationMin min</td>
+                            <td>
+                                <div class="capacity-bar">
+                                    <div class="capacity-fill"
+                                         style="width: @(c.MaxCapacity == 0 ? 0 : (c.BookedMemberIds.Count * 100 / c.MaxCapacity))%">
+                                    </div>
+                                </div>
+                                <small>@c.BookedMemberIds.Count / @c.MaxCapacity</small>
+                            </td>
+                            <td>
+                                @if (c.IsFull)
+                                {
+                                    <span class="badge badge-inactive">Ausgebucht</span>
+                                }
+                                else if (c.StartTime < DateTime.UtcNow)
+                                {
+                                    <span class="badge badge-attended">Vergangen</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-active">Verfügbar</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm"
+                                        @onclick='() => Nav.NavigateTo($"/courses/edit/{c.Id}")'>
+                                    ✏️ Bearbeiten
+                                </button>
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => ConfirmDelete(c)">
+                                    🗑️ Löschen
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (!_courses.Any())
+            {
+                <div class="loading">Keine Kurse gefunden.</div>
+            }
+        </div>
+    </div>
+}
+
+@if (_courseToDelete is not null)
+{
+    <div class="modal-backdrop" @onclick="CancelDelete">
+        <div class="card modal-card" @onclick:stopPropagation="true">
+            <h3>Kurs löschen?</h3>
+            <p>Soll <strong>@_courseToDelete.Name</strong> wirklich gelöscht werden?</p>
+            <div class="form-actions">
+                <button class="btn btn-danger" @onclick="DeleteCourse">🗑️ Ja, löschen</button>
+                <button class="btn btn-secondary" @onclick="CancelDelete">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Course> _courses       = new();
+    private bool         _loading       = true;
+    private bool         _showAll       = true;
+    private string       _feedback      = string.Empty;
+    private Course?      _courseToDelete;
+
+    protected override async Task OnInitializedAsync() =>
+        await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _courses = _showAll
+            ? await CourseService.GetAllAsync()
+            : await CourseService.GetUpcomingAsync();
+        _loading = false;
+    }
+
+    private async Task ShowAll()     { _showAll = true;  await LoadAsync(); }
+    private async Task ShowUpcoming(){ _showAll = false; await LoadAsync(); }
+
+    private void ConfirmDelete(Course c) => _courseToDelete = c;
+    private void CancelDelete()          => _courseToDelete = null;
+
+    private async Task DeleteCourse()
+    {
+        if (_courseToDelete is null) return;
+        await CourseService.DeleteAsync(_courseToDelete.Id!);
+        _feedback       = $"Kurs \"{_courseToDelete.Name}\" wurde gelöscht.";
+        _courseToDelete = null;
+        await LoadAsync();
+    }
+}
