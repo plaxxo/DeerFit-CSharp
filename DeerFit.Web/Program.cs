@@ -5,7 +5,7 @@ using DeerFit.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Blazor (neues Template)
+// Blazor
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 

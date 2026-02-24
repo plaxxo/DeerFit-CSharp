@@ -16,9 +16,6 @@ public class CourseRepository : BaseRepository<Course>
             .SortBy(c => c.StartTime)
             .ToListAsync();
 
-    public async Task<List<Course>> GetByTrainerAsync(string trainer) =>
-        await Collection.Find(c => c.Trainer == trainer).ToListAsync();
-
     public async Task AddMemberToBookedListAsync(string courseId, string memberId)
     {
         var update = Builders<Course>.Update.AddToSet(c => c.BookedMemberIds, memberId);

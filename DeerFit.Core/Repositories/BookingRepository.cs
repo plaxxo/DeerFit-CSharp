@@ -13,9 +13,6 @@ public class BookingRepository : BaseRepository<Booking>
     public async Task<List<Booking>> GetByMemberAsync(string memberId) =>
         await Collection.Find(b => b.MemberId == memberId).ToListAsync();
 
-    public async Task<List<Booking>> GetByCourseAsync(string courseId) =>
-        await Collection.Find(b => b.CourseId == courseId).ToListAsync();
-
     public async Task<Booking?> GetExistingAsync(string memberId, string courseId) =>
         await Collection
             .Find(b => b.MemberId == memberId &&

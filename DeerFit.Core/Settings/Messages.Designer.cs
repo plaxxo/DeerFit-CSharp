@@ -60,6 +60,15 @@ namespace DeerFit.Core.Settings {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Member already exists.
+        /// </summary>
+        public static string Member_AlreadyExists {
+            get {
+                return ResourceManager.GetString("Member_AlreadyExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Member created successfully!.
         /// </summary>
         public static string Member_Created {

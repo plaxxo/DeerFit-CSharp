@@ -35,4 +35,7 @@
     <data name="Member_Deleted" xml:space="preserve">
             <value>Member '{0}' deleted successfully.</value>
     </data>
+    <data name="Member_AlreadyExists" xml:space="preserve">
+        <value>Member already exists</value>
+    </data>
 </root>

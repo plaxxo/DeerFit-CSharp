@@ -24,20 +24,20 @@ public class BookingService
 
     public async Task<(bool Success, string Message)> BookAsync(string memberId, string courseId)
     {
-        // Kurs laden & prüfen
+        // get course and null check
         var course = await _courseRepo.GetByIdAsync(courseId);
         if (course is null)
-            return (false, "Kurs nicht gefunden.");
+            return (false, "No course found.");
 
         if (course.IsFull)
-            return (false, "Kurs ist bereits ausgebucht.");
+            return (false, "Course is already full.");
 
-        // Doppelbuchung verhindern
+        // avoid duplicate bookings
         var existing = await _bookingRepo.GetExistingAsync(memberId, courseId);
         if (existing is not null)
-            return (false, "Member ist bereits für diesen Kurs gebucht.");
+            return (false, "Member cannot book this course twice.");
 
-        // Buchung anlegen & Kurs aktualisieren
+        // create booking
         var booking = new Booking { MemberId = memberId, CourseId = courseId };
         await _bookingRepo.CreateAsync(booking);
         await _courseRepo.AddMemberToBookedListAsync(courseId, memberId);

@@ -13,7 +13,7 @@ public class Course
     public string   Description { get; set; } = string.Empty;
     public string   Trainer     { get; set; } = null!;
     public DateTime StartTime   { get; set; }
-    public int      DurationMin { get; set; }  // Dauer in Minuten
+    public int      DurationMin { get; set; }
     public int      MaxCapacity { get; set; }
 
     public List<string> BookedMemberIds { get; set; } = new();
