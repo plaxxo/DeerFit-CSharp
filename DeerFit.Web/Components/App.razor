@@ -18,8 +18,21 @@
 </head>
 
 <body>
-<Routes @rendermode="InteractiveServer" />
-<ReconnectModal/>
+    <script>
+        Blazor.start({
+            circuit: {
+                reconnectionOptions: {
+                    maxRetries: 10,
+                    retryIntervalMilliseconds: 2000
+                }
+            },
+            configureSignalR: (builder) => {
+                builder.withUrl('/_blazor', {
+                    transport: 1 | 4  // WebSockets | LongPolling
+                });
+            }
+        });
+    </script><ReconnectModal/>
 <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
