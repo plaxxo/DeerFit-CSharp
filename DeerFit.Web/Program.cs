@@ -49,6 +49,9 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.UseWebSockets();
+app.MapBlazorHub();
+
 // Blazor Web App Endpunkt (nicht mehr MapBlazorHub + MapFallbackToPage)
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
