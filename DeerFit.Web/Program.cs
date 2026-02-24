@@ -44,7 +44,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Don't redirect to HTTPS in Docker
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
